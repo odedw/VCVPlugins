@@ -70,10 +70,10 @@ struct ColoredInput : PJ301MPort
   void draw(NVGcontext *vg)
   {
     PJ301MPort::draw(vg);
-    nvgStrokeWidth(vg, 2.2);
+    nvgStrokeWidth(vg, 3);
     nvgStrokeColor(vg, color);
     nvgBeginPath(vg);
-    nvgCircle(vg, box.size.x / 2, box.size.y / 2, box.size.x / 2 - 2.1);
+    nvgCircle(vg, box.size.x / 2, box.size.y / 2, box.size.x / 2 - 2);
     nvgStroke(vg);
   }
 };
