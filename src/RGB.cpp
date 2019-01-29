@@ -92,11 +92,35 @@ struct BlueInput : ColoredInput
   BlueInput() : ColoredInput(COLOR_BLUE) {}
 };
 
+struct ColorDisplay : TransparentWidget
+{
+  RgbModule *module;
+
+  NVGcolor computeColor(float r, float g, float b)
+  {
+    return nvgRGB(255 * r / 10, 255 * g / 10, 255 * b / 10);
+  }
+
+  void draw(NVGcontext *vg) override
+  {
+    nvgBeginPath(vg);
+    // nvgStrokeColor(vg, COLOR_WHITE);
+    nvgFillColor(vg, computeColor(module->inputs[RgbModule::R_INPUT].value, module->inputs[RgbModule::G_INPUT].value, module->inputs[RgbModule::B_INPUT].value));
+    nvgRoundedRect(vg, 0, 0, box.size.x, box.size.y, 10);
+    nvgFill(vg);
+    // nvgFillColor(vg, COLOR_WHITE);
+    // char array[10];
+    // sprintf(array, "%f", module->inputs[RgbModule::R_INPUT].value);
+    // nvgText(vg, 10, 20, array, NULL);
+    // nvgStroke(vg);
+  }
+};
+
 struct RgbWidget : ModuleWidget
 {
   float inputY = 330;
-  float inputXMargin = 10;
-  float inputSize = 34.6;
+  float margin = 10;
+  float displayTopMargin = 20;
 
   RgbWidget(RgbModule *module) : ModuleWidget(module)
   {
@@ -107,11 +131,19 @@ struct RgbWidget : ModuleWidget
     addChild(Widget::create<ScrewSilver>(Vec(RACK_GRID_WIDTH, RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
     addChild(Widget::create<ScrewSilver>(Vec(box.size.x - 2 * RACK_GRID_WIDTH, RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
 
-    RedInput *r = RedInput::create<RedInput>(Vec(inputXMargin, inputY), Port::INPUT, module, RgbModule::R_INPUT);
+    RedInput *r = RedInput::create<RedInput>(Vec(margin, inputY), Port::INPUT, module, RgbModule::R_INPUT);
     rack::Rect inputBox = r->box;
     addInput(r);
     addInput(Port::create<GreenInput>(Vec(box.size.x / 2 - inputBox.size.x / 2, inputY), Port::INPUT, module, RgbModule::G_INPUT));
-    addInput(Port::create<BlueInput>(Vec(box.size.x - (inputBox.size.x + inputXMargin), inputY), Port::INPUT, module, RgbModule::B_INPUT));
+    addInput(Port::create<BlueInput>(Vec(box.size.x - (inputBox.size.x + margin), inputY), Port::INPUT, module, RgbModule::B_INPUT));
+
+    {
+      ColorDisplay *display = new ColorDisplay();
+      display->module = module;
+      display->box.pos = Vec(margin, displayTopMargin);
+      display->box.size = Vec(box.size.x - margin * 2, box.size.y - (margin + displayTopMargin + (box.size.y - inputY)));
+      addChild(display);
+    }
   }
 };
 
