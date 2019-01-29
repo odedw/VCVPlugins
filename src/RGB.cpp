@@ -1,6 +1,6 @@
 #include "Inja.hpp"
 
-struct RgbModule : Module
+struct Rgb : Module
 {
   enum ParamIds
   {
@@ -22,8 +22,29 @@ struct RgbModule : Module
     NUM_LIGHTS
   };
 
-  RgbModule() : Module(NUM_PARAMS, NUM_INPUTS, NUM_OUTPUTS, NUM_LIGHTS) {}
+  enum RangeMode
+  {
+    MINUS_FIVE_TO_FIVE,
+    ZERO_TO_FIVE,
+    ZERO_TO_TEN,
+    NUM_RANGE_MODES
+  };
+
+  float rangeModeMin[NUM_RANGE_MODES] = {-5, 0, 0};
+  float rangeModeMax[NUM_RANGE_MODES] = {5, 5, 10};
+
+  Rgb() : Module(NUM_PARAMS, NUM_INPUTS, NUM_OUTPUTS, NUM_LIGHTS)
+  {
+  }
+
   void step() override;
+
+  int range = 0;
+
+  void onReset() override
+  {
+    range = MINUS_FIVE_TO_FIVE;
+  }
 
   // For more advanced Module features, read Rack's engine.hpp header file
   // - toJson, fromJson: serialization of internal data
@@ -31,7 +52,7 @@ struct RgbModule : Module
   // - onReset, onRandomize, onCreate, onDelete: implements special behavior when user clicks these from the context menu
 };
 
-void RgbModule::step()
+void Rgb::step()
 {
   // Implement a simple sine oscillator
   // float deltaTime = engineGetSampleTime();
@@ -94,25 +115,53 @@ struct BlueInput : ColoredInput
 
 struct ColorDisplay : TransparentWidget
 {
-  RgbModule *module;
+  Rgb *module;
 
-  NVGcolor computeColor(float r, float g, float b)
+  float scale(float value, float minA, float maxA, float minB, float maxB)
   {
-    return nvgRGB(255 * r / 10, 255 * g / 10, 255 * b / 10);
+    float relativePart = ((value - minA) / (maxA - minA));
+    return relativePart * (maxB - minB) + minB;
+  }
+  NVGcolor computeColor(float r, float g, float b, float min, float max)
+  {
+    return nvgRGB(scale(r, min, max, 0, 255), scale(g, min, max, 0, 255), scale(b, min, max, 0, 255));
   }
 
   void draw(NVGcontext *vg) override
   {
     nvgBeginPath(vg);
-    // nvgStrokeColor(vg, COLOR_WHITE);
-    nvgFillColor(vg, computeColor(module->inputs[RgbModule::R_INPUT].value, module->inputs[RgbModule::G_INPUT].value, module->inputs[RgbModule::B_INPUT].value));
+    nvgFillColor(vg, computeColor(module->inputs[Rgb::R_INPUT].value,
+                                  module->inputs[Rgb::G_INPUT].value,
+                                  module->inputs[Rgb::B_INPUT].value,
+                                  module->rangeModeMin[module->range],
+                                  module->rangeModeMax[module->range]));
     nvgRoundedRect(vg, 0, 0, box.size.x, box.size.y, 10);
     nvgFill(vg);
-    // nvgFillColor(vg, COLOR_WHITE);
-    // char array[10];
-    // sprintf(array, "%f", module->inputs[RgbModule::R_INPUT].value);
+
+    // nvgFillColor(vg, COLOR_BLACK);
+    // char array[20];
+    // sprintf(array, "%f",
+    //         scale(module->inputs[Rgb::R_INPUT].value,
+    //               module->rangeModeMin[module->range],
+    //               module->rangeModeMax[module->range], 0, 255));
     // nvgText(vg, 10, 20, array, NULL);
     // nvgStroke(vg);
+    // nvgFill(vg);
+  }
+};
+
+struct RgbRangeMenuItem : MenuItem
+{
+  Rgb *module;
+  int range;
+  void onAction(EventAction &e) override
+  {
+    module->range = range;
+  }
+  void step() override
+  {
+    rightText = (module->range == range) ? "✔" : "";
+    MenuItem::step();
   }
 };
 
@@ -122,7 +171,7 @@ struct RgbWidget : ModuleWidget
   float margin = 10;
   float displayTopMargin = 20;
 
-  RgbWidget(RgbModule *module) : ModuleWidget(module)
+  RgbWidget(Rgb *module) : ModuleWidget(module)
   {
     setPanel(SVG::load(assetPlugin(plugin, "res/rgb.svg")));
 
@@ -131,11 +180,11 @@ struct RgbWidget : ModuleWidget
     addChild(Widget::create<ScrewSilver>(Vec(RACK_GRID_WIDTH, RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
     addChild(Widget::create<ScrewSilver>(Vec(box.size.x - 2 * RACK_GRID_WIDTH, RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
 
-    RedInput *r = RedInput::create<RedInput>(Vec(margin, inputY), Port::INPUT, module, RgbModule::R_INPUT);
+    RedInput *r = RedInput::create<RedInput>(Vec(margin, inputY), Port::INPUT, module, Rgb::R_INPUT);
     rack::Rect inputBox = r->box;
     addInput(r);
-    addInput(Port::create<GreenInput>(Vec(box.size.x / 2 - inputBox.size.x / 2, inputY), Port::INPUT, module, RgbModule::G_INPUT));
-    addInput(Port::create<BlueInput>(Vec(box.size.x - (inputBox.size.x + margin), inputY), Port::INPUT, module, RgbModule::B_INPUT));
+    addInput(Port::create<GreenInput>(Vec(box.size.x / 2 - inputBox.size.x / 2, inputY), Port::INPUT, module, Rgb::G_INPUT));
+    addInput(Port::create<BlueInput>(Vec(box.size.x - (inputBox.size.x + margin), inputY), Port::INPUT, module, Rgb::B_INPUT));
 
     {
       ColorDisplay *display = new ColorDisplay();
@@ -145,10 +194,22 @@ struct RgbWidget : ModuleWidget
       addChild(display);
     }
   }
+
+  void appendContextMenu(Menu *menu) override
+  {
+    Rgb *module = dynamic_cast<Rgb *>(this->module);
+    assert(module);
+
+    menu->addChild(construct<MenuLabel>());
+    menu->addChild(construct<MenuLabel>(&MenuLabel::text, "Value ranges"));
+    menu->addChild(construct<RgbRangeMenuItem>(&MenuItem::text, "-5v to 5v", &RgbRangeMenuItem::module, module, &RgbRangeMenuItem::range, Rgb::MINUS_FIVE_TO_FIVE));
+    menu->addChild(construct<RgbRangeMenuItem>(&MenuItem::text, "0v to 5v", &RgbRangeMenuItem::module, module, &RgbRangeMenuItem::range, Rgb::ZERO_TO_FIVE));
+    menu->addChild(construct<RgbRangeMenuItem>(&MenuItem::text, "0v to 10v", &RgbRangeMenuItem::module, module, &RgbRangeMenuItem::range, Rgb::ZERO_TO_TEN));
+  }
 };
 
 // Specify the Module and ModuleWidget subclass, human-readable
 // author name for categorization per plugin, module slug (should never
 // change), human-readable module name, and any number of tags
 // (found in `include/tags.hpp`) separated by commas.
-Model *rgb = Model::create<RgbModule, RgbWidget>("Inja", "RGB", "RGB", OSCILLATOR_TAG);
+Model *rgb = Model::create<Rgb, RgbWidget>("Inja", "RGB", "RGB", VISUAL_TAG);
