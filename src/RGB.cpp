@@ -24,14 +24,14 @@ struct Rgb : Module
 
   enum RangeMode
   {
-    MINUS_FIVE_TO_FIVE,
-    ZERO_TO_FIVE,
     ZERO_TO_TEN,
+    ZERO_TO_FIVE,
+    MINUS_FIVE_TO_FIVE,
     NUM_RANGE_MODES
   };
 
-  float rangeModeMin[NUM_RANGE_MODES] = {-5, 0, 0};
-  float rangeModeMax[NUM_RANGE_MODES] = {5, 5, 10};
+  float rangeModeMin[NUM_RANGE_MODES] = {0, 0, -5};
+  float rangeModeMax[NUM_RANGE_MODES] = {10, 5, 5};
 
   Rgb() : Module(NUM_PARAMS, NUM_INPUTS, NUM_OUTPUTS, NUM_LIGHTS)
   {
@@ -39,45 +39,34 @@ struct Rgb : Module
 
   void step() override;
 
-  int range = 0;
+  int rangeMode = 0;
 
   void onReset() override
   {
-    range = MINUS_FIVE_TO_FIVE;
+    rangeMode = ZERO_TO_TEN;
   }
 
-  // For more advanced Module features, read Rack's engine.hpp header file
-  // - toJson, fromJson: serialization of internal data
-  // - onSampleRateChange: event triggered by a change of sample rate
-  // - onReset, onRandomize, onCreate, onDelete: implements special behavior when user clicks these from the context menu
+  json_t *toJson() override
+  {
+    json_t *rootJ = json_object();
+
+    json_object_set_new(rootJ, "rangeMode", json_integer((int)rangeMode));
+
+    return rootJ;
+  }
+
+  void fromJson(json_t *rootJ) override
+  {
+    json_t *rangeModeJ = json_object_get(rootJ, "rangeMode");
+    if (rangeModeJ)
+    {
+      rangeMode = (Rgb::RangeMode)json_integer_value(rangeModeJ);
+    }
+  }
 };
 
 void Rgb::step()
 {
-  // Implement a simple sine oscillator
-  // float deltaTime = engineGetSampleTime();
-
-  // Compute the frequency from the pitch parameter and input
-  // float pitch = params[PITCH_PARAM].value;
-  // pitch += inputs[PITCH_INPUT].value;
-  // pitch = clamp(pitch, -4.0f, 4.0f);
-  // The default pitch is C4
-  // float freq = 261.626f * powf(2.0f, pitch);
-
-  // Accumulate the phase
-  // phase += freq * deltaTime;
-  // if (phase >= 1.0f)
-  // phase -= 1.0f;
-
-  // Compute the sine output
-  // float sine = sinf(2.0f * M_PI * phase);
-  // outputs[SINE_OUTPUT].value = 5.0f * sine;
-
-  // Blink light at 1Hz
-  // blinkPhase += deltaTime;
-  // if (blinkPhase >= 1.0f)
-  // blinkPhase -= 1.0f;
-  // lights[BLINK_LIGHT].value = (blinkPhase < 0.5f) ? 1.0f : 0.0f;
 }
 
 struct ColoredInput : PJ301MPort
@@ -133,8 +122,8 @@ struct ColorDisplay : TransparentWidget
     nvgFillColor(vg, computeColor(module->inputs[Rgb::R_INPUT].value,
                                   module->inputs[Rgb::G_INPUT].value,
                                   module->inputs[Rgb::B_INPUT].value,
-                                  module->rangeModeMin[module->range],
-                                  module->rangeModeMax[module->range]));
+                                  module->rangeModeMin[module->rangeMode],
+                                  module->rangeModeMax[module->rangeMode]));
     nvgRoundedRect(vg, 0, 0, box.size.x, box.size.y, 10);
     nvgFill(vg);
 
@@ -156,11 +145,11 @@ struct RgbRangeMenuItem : MenuItem
   int range;
   void onAction(EventAction &e) override
   {
-    module->range = range;
+    module->rangeMode = range;
   }
   void step() override
   {
-    rightText = (module->range == range) ? "✔" : "";
+    rightText = (module->rangeMode == range) ? "✔" : "";
     MenuItem::step();
   }
 };
@@ -202,14 +191,10 @@ struct RgbWidget : ModuleWidget
 
     menu->addChild(construct<MenuLabel>());
     menu->addChild(construct<MenuLabel>(&MenuLabel::text, "Value ranges"));
-    menu->addChild(construct<RgbRangeMenuItem>(&MenuItem::text, "-5v to 5v", &RgbRangeMenuItem::module, module, &RgbRangeMenuItem::range, Rgb::MINUS_FIVE_TO_FIVE));
-    menu->addChild(construct<RgbRangeMenuItem>(&MenuItem::text, "0v to 5v", &RgbRangeMenuItem::module, module, &RgbRangeMenuItem::range, Rgb::ZERO_TO_FIVE));
     menu->addChild(construct<RgbRangeMenuItem>(&MenuItem::text, "0v to 10v", &RgbRangeMenuItem::module, module, &RgbRangeMenuItem::range, Rgb::ZERO_TO_TEN));
+    menu->addChild(construct<RgbRangeMenuItem>(&MenuItem::text, "0v to 5v", &RgbRangeMenuItem::module, module, &RgbRangeMenuItem::range, Rgb::ZERO_TO_FIVE));
+    menu->addChild(construct<RgbRangeMenuItem>(&MenuItem::text, "-5v to 5v", &RgbRangeMenuItem::module, module, &RgbRangeMenuItem::range, Rgb::MINUS_FIVE_TO_FIVE));
   }
 };
 
-// Specify the Module and ModuleWidget subclass, human-readable
-// author name for categorization per plugin, module slug (should never
-// change), human-readable module name, and any number of tags
-// (found in `include/tags.hpp`) separated by commas.
 Model *rgb = Model::create<Rgb, RgbWidget>("Inja", "RGB", "RGB", VISUAL_TAG);
