@@ -102,9 +102,11 @@ struct BlueInput : ColoredInput
   BlueInput() : ColoredInput(COLOR_BLUE) {}
 };
 
-struct ColorDisplay : TransparentWidget
+struct LedMatrix : TransparentWidget
 {
   Rgb *module;
+  float MARGIN = 3;
+  float COLUMNS = 5;
 
   float scale(float value, float minA, float maxA, float minB, float maxB)
   {
@@ -118,22 +120,36 @@ struct ColorDisplay : TransparentWidget
 
   void draw(NVGcontext *vg) override
   {
+    float radius = (box.size.x - MARGIN * (COLUMNS + 1)) / (COLUMNS * 2); //((box.size.x - MARGIN * (COLUMNS + 1)) / COLUMNS) / 2;
+    int rows = (box.size.y - MARGIN) / (MARGIN + radius * 2);
+
+    nvgBeginPath(vg);
+    nvgFillColor(vg, COLOR_BLACK);
+    nvgRoundedRect(vg, 0, 0, box.size.x, MARGIN + rows * (MARGIN + radius * 2), radius);
+    // nvgRect(vg, 0, 0, box.size.x, MARGIN + rows * (MARGIN + radius * 2));
+    nvgFill(vg);
     nvgBeginPath(vg);
     nvgFillColor(vg, computeColor(module->inputs[Rgb::R_INPUT].value,
                                   module->inputs[Rgb::G_INPUT].value,
                                   module->inputs[Rgb::B_INPUT].value,
                                   module->rangeModeMin[module->rangeMode],
                                   module->rangeModeMax[module->rangeMode]));
-    nvgRoundedRect(vg, 0, 0, box.size.x, box.size.y, 10);
+
+    for (int i = 0; i < COLUMNS; i++)
+    {
+      for (int j = 0; j < rows; j++)
+      {
+        nvgCircle(vg, MARGIN + radius + i * (MARGIN + radius * 2), MARGIN + j * (MARGIN + radius * 2) + radius, radius);
+      }
+    }
     nvgFill(vg);
 
     // nvgFillColor(vg, COLOR_BLACK);
     // char array[20];
-    // sprintf(array, "%f",
-    //         scale(module->inputs[Rgb::R_INPUT].value,
-    //               module->rangeModeMin[module->range],
-    //               module->rangeModeMax[module->range], 0, 255));
+    // sprintf(array, "%f", box.size.x);
     // nvgText(vg, 10, 20, array, NULL);
+    // sprintf(array, "%f", radius);
+    // nvgText(vg, 10, 40, array, NULL);
     // nvgStroke(vg);
     // nvgFill(vg);
   }
@@ -176,11 +192,11 @@ struct RgbWidget : ModuleWidget
     addInput(Port::create<BlueInput>(Vec(box.size.x - (inputBox.size.x + margin), inputY), Port::INPUT, module, Rgb::B_INPUT));
 
     {
-      ColorDisplay *display = new ColorDisplay();
-      display->module = module;
-      display->box.pos = Vec(margin, displayTopMargin);
-      display->box.size = Vec(box.size.x - margin * 2, box.size.y - (margin + displayTopMargin + (box.size.y - inputY)));
-      addChild(display);
+      LedMatrix *matrix = new LedMatrix();
+      matrix->module = module;
+      matrix->box.pos = Vec(margin, displayTopMargin);
+      matrix->box.size = Vec(box.size.x - margin * 2, box.size.y - (margin + displayTopMargin + (box.size.y - inputY)));
+      addChild(matrix);
     }
   }
 
