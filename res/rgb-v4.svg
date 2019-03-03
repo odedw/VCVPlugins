@@ -36,7 +36,7 @@
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
      inkscape:zoom="1.4"
-     inkscape:cx="72.409191"
+     inkscape:cx="-43.662238"
      inkscape:cy="199.20908"
      inkscape:document-units="px"
      inkscape:current-layer="layer1"
@@ -59,7 +59,7 @@
         <dc:format>image/svg+xml</dc:format>
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title></dc:title>
+        <dc:title />
       </cc:Work>
     </rdf:RDF>
   </metadata>
@@ -74,7 +74,7 @@
        id="rect817"
        inkscape:connector-curvature="0" />
     <ellipse
-       style="opacity:1;fill:#000000;fill-opacity:1;stroke:#3e3e3e;stroke-width:0.61594886;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       style="opacity:1;fill:#000000;fill-opacity:1;stroke:#3e3e3e;stroke-width:0.88053322;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
        id="path818"
        cx="6.1515741"
        cy="285.4906"
@@ -86,9 +86,9 @@
        cy="285.4906"
        cx="15.87501"
        id="ellipse3360"
-       style="opacity:1;fill:#000000;fill-opacity:1;stroke:#3e3e3e;stroke-width:0.61594886;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1" />
+       style="opacity:1;fill:#000000;fill-opacity:1;stroke:#3e3e3e;stroke-width:0.88053322;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1" />
     <ellipse
-       style="opacity:1;fill:#000000;fill-opacity:1;stroke:#3e3e3e;stroke-width:0.61594886;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       style="opacity:1;fill:#000000;fill-opacity:1;stroke:#3e3e3e;stroke-width:0.88053322;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
        id="ellipse3362"
        cx="25.598448"
        cy="285.4906"
