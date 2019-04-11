@@ -69,44 +69,45 @@ void Rgb::step()
 {
 }
 
-struct ColoredInput : PJ301MPort
-{
-  NVGcolor color;
-  ColoredInput(NVGcolor c)
-  {
-    color = c;
-  }
+// struct ColoredInput : PJ301MPort
+// {
+//   NVGcolor color;
+//   ColoredInput(NVGcolor c)
+//   {
+//     color = c;
+//   }
 
-  void draw(NVGcontext *vg)
-  {
-    PJ301MPort::draw(vg);
-    nvgStrokeWidth(vg, 3);
-    nvgStrokeColor(vg, color);
-    nvgBeginPath(vg);
-    nvgCircle(vg, box.size.x / 2, box.size.y / 2, box.size.x / 2 - 2);
-    nvgStroke(vg);
-  }
-};
+//   void draw(NVGcontext *vg)
+//   {
+//     PJ301MPort::draw(vg);
+//     nvgStrokeWidth(vg, 3);
+//     nvgStrokeColor(vg, color);
+//     nvgBeginPath(vg);
+//     nvgCircle(vg, box.size.x / 2, box.size.y / 2, box.size.x / 2 - 2);
+//     nvgStroke(vg);
+//   }
+// };
 
-struct RedInput : ColoredInput
-{
-  RedInput() : ColoredInput(COLOR_RED) {}
-};
+// struct RedInput : ColoredInput
+// {
+//   RedInput() : ColoredInput(COLOR_RED) {}
+// };
 
-struct GreenInput : ColoredInput
-{
-  GreenInput() : ColoredInput(COLOR_GREEN) {}
-};
-struct BlueInput : ColoredInput
-{
-  BlueInput() : ColoredInput(COLOR_BLUE) {}
-};
+// struct GreenInput : ColoredInput
+// {
+//   GreenInput() : ColoredInput(COLOR_GREEN) {}
+// };
+// struct BlueInput : ColoredInput
+// {
+//   BlueInput() : ColoredInput(COLOR_BLUE) {}
+// };
 
 struct LedMatrix : TransparentWidget
 {
   Rgb *module;
   float MARGIN = 3;
   float COLUMNS = 5;
+  PJ301MPort *r;
 
   float scale(float value, float minA, float maxA, float minB, float maxB)
   {
@@ -148,7 +149,7 @@ struct LedMatrix : TransparentWidget
     // char array[20];
     // sprintf(array, "%f", box.size.x);
     // nvgText(vg, 10, 20, array, NULL);
-    // sprintf(array, "%f", radius);
+    // sprintf(array, "%f", MARGIN + rows * (MARGIN + radius * 2));
     // nvgText(vg, 10, 40, array, NULL);
     // nvgStroke(vg);
     // nvgFill(vg);
@@ -172,30 +173,33 @@ struct RgbRangeMenuItem : MenuItem
 
 struct RgbWidget : ModuleWidget
 {
-  float inputY = 330;
-  float margin = 10;
+  float inputY = 314;
+  float margin = 9.75;
   float displayTopMargin = 20;
+  float portSize = 24.6721;
 
   RgbWidget(Rgb *module) : ModuleWidget(module)
   {
-    setPanel(SVG::load(assetPlugin(plugin, "res/rgb.svg")));
+    setPanel(SVG::load(assetPlugin(plugin, "res/rgb-v5.svg")));
 
     addChild(Widget::create<ScrewSilver>(Vec(RACK_GRID_WIDTH, 0)));
     addChild(Widget::create<ScrewSilver>(Vec(box.size.x - 2 * RACK_GRID_WIDTH, 0)));
     addChild(Widget::create<ScrewSilver>(Vec(RACK_GRID_WIDTH, RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
     addChild(Widget::create<ScrewSilver>(Vec(box.size.x - 2 * RACK_GRID_WIDTH, RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
 
-    RedInput *r = RedInput::create<RedInput>(Vec(margin, inputY), Port::INPUT, module, Rgb::R_INPUT);
-    rack::Rect inputBox = r->box;
-    addInput(r);
-    addInput(Port::create<GreenInput>(Vec(box.size.x / 2 - inputBox.size.x / 2, inputY), Port::INPUT, module, Rgb::G_INPUT));
-    addInput(Port::create<BlueInput>(Vec(box.size.x - (inputBox.size.x + margin), inputY), Port::INPUT, module, Rgb::B_INPUT));
+    // PJ301MPort *r = PJ301MPort::create<PJ301MPort>(Vec(9.75, inputY), Port::INPUT, module, Rgb::R_INPUT);
+    // rack::Rect inputBox = r->box;
+    // addInput(r);
+    addInput(Port::create<PJ301MPort>(Vec(11, inputY), Port::INPUT, module, Rgb::R_INPUT));
+    addInput(Port::create<PJ301MPort>(Vec(box.size.x / 2 - portSize / 2, inputY), Port::INPUT, module, Rgb::G_INPUT));
+    addInput(Port::create<PJ301MPort>(Vec(box.size.x - portSize - 11, inputY), Port::INPUT, module, Rgb::B_INPUT));
 
     {
       LedMatrix *matrix = new LedMatrix();
       matrix->module = module;
       matrix->box.pos = Vec(margin, displayTopMargin);
       matrix->box.size = Vec(box.size.x - margin * 2, box.size.y - (margin + displayTopMargin + (box.size.y - inputY)));
+      // matrix->r = r;
       addChild(matrix);
     }
   }
